@@ -165,7 +165,7 @@ function plugin(file, librarySettings) {
   if (convert === true) {
     response.processFile = true;
     response.reQueueAfter = true;
-    response.preset = `,${extraArguments} -c copy -max_muxing_queue_size 4096`;
+    response.preset = `,${extraArguments} -c copy -max_muxing_queue_size 9999`;
     response.infoLog += "☒ Streams are out of order, reorganizing streams. Video, Audio, Subtitles. \n";
   } else {
     response.processFile = false;

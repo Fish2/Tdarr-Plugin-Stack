@@ -52,7 +52,7 @@ function plugin(file, librarySettings) {
   if (convert === true) {
     response.processFile = true;
     response.reQueueAfter = true;
-    response.preset = `,-map 0 ${extraArguments} -c copy -max_muxing_queue_size 4096`;
+    response.preset = `,-map 0 ${extraArguments} -c copy -max_muxing_queue_size 9999`;
     response.infoLog += "☒File has image stream, Removing. \n";
   } else {
     response.processFile = false;

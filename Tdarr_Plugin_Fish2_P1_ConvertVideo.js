@@ -10,8 +10,8 @@ function details() {
     Link: "",
     Tags: "pre-processing,ffmpeg,video only,nvenc h265",
     Inputs: [{
-        name: "maxbitrate",
-        tooltip: `Specify Max average H265 bitrate
+        name: "max_file_bitrate",
+        tooltip: `Specify Max average file bitrate
       	            \\nExample:\\n
       	            8000
                     \\nExample:\\n
@@ -49,6 +49,7 @@ function plugin(file, librarySettings, inputs) {
 
   // Get Current Overal Bit Rate
   var currentBitrate = 0;
+
   if (file.bit_rate != 0) {
     currentBitrate = ~~(file.bit_rate / 1000);
   } else if (typeof file.meta.Duration != "undefined") {
@@ -65,11 +66,16 @@ function plugin(file, librarySettings, inputs) {
   var maximumBitrate = ~~(targetBitrate * 1.3);
   var videoIdx = 0;
   var convert = false;
+  var max_file_bitrateenable = false;
   var CPU10 = false;
+
+  if (inputs.max_file_bitrate !== "") {
+    max_file_bitrateenable = true;
+  }
 
   // Go through each stream in the file.
   for (var i = 0; i < file.ffProbeData.streams.length; i++) {
-    if (file.ffProbeData.streams[i].codec_name.toLowerCase() == "mov_text" || file.ffProbeData.streams[i].codec_name.toLowerCase() == "eia_608") {
+    if (file.ffProbeData.streams[i].codec_name.toLowerCase() == "mov_text" || file.ffProbeData.streams[i].codec_name.toLowerCase() == "eia_608" || file.ffProbeData.streams[i].codec_name.toLowerCase() == "timed_id3") {
       response.infoLog += "☒File contains text, Removing. \n";
       extraArguments += `-map -0:d -map -0:${i} `;
     }
@@ -86,14 +92,15 @@ function plugin(file, librarySettings, inputs) {
         response.infoLog += "☒File is not in correct codec, Converting.\n";
         convert = true;
       }
-      if (file.ffProbeData.streams[i].codec_name != "hevc" && currentBitrate >= inputs.maxbitrate) {
-        response.infoLog += "☒Stream bit Rate to high, Converting. \n";
-        convert = true;
-      }
-      // FIX High Bitrates for hevc need to work out a way to convert down with out geting bitrate from filesize
-      if (file.ffProbeData.streams[i].codec_name == "hevc" && currentBitrate >= (inputs.maxbitrate * 2)) {
-        response.infoLog += "☒h265 stream bit Rate to high, Converting. \n";
-        convert = true;
+      if (max_file_bitrateenable == true) {
+        if (file.ffProbeData.streams[i].codec_name != "hevc" && currentBitrate >= inputs.max_file_bitrate) {
+          response.infoLog += "☒Stream bit Rate to high, Converting. \n";
+          convert = true;
+        }
+        if (file.ffProbeData.streams[i].codec_name == "hevc" && currentBitrate >= inputs.max_file_bitrate) {
+          response.infoLog += "☒h265 stream bit Rate to high, Converting. \n";
+          convert = true;
+        }
       }
       if (file.container != "mkv" && convert == false) {
         response.infoLog += "☒File is not in correct container (mkv), Remuxing. \n";
@@ -111,11 +118,11 @@ function plugin(file, librarySettings, inputs) {
       response.preset = `, -map 0 -c copy ${extraArguments} `;
       response.processFile = true;
       return response;
-    } else if (inputs.maxbitrate !== "" && targetBitrate >= inputs.maxbitrate) {
-      targetBitrate = inputs.maxbitrate;
+    } else if (inputs.max_file_bitrate !== "" && targetBitrate >= inputs.max_file_bitrate) {
+      targetBitrate = (inputs.max_file_bitrate * 0.1);
       minimumBitrate = ~~(targetBitrate * 0.7);
       maximumBitrate = ~~(targetBitrate * 1.3);
-      response.infoLog += `☒Target bitrate more than configerd, Setting to ${inputs.maxbitrate} \n`;
+      response.infoLog += `☒Target bitrate more than configerd, Setting to ${inputs.max_file_bitrate} \n`;
     }
 
     bitrateSettings = `-b:v ${targetBitrate}k -minrate ${minimumBitrate}k -maxrate ${maximumBitrate}k -bufsize ${currentBitrate}k`;
@@ -146,7 +153,7 @@ function plugin(file, librarySettings, inputs) {
 
     response.processFile = true;
     response.reQueueAfter = true;
-    response.preset = `,-map 0 -c:v hevc_nvenc -rc:v vbr_hq -qmin 5 -cq:v 19 ${bitrateSettings} -preset 7 -rc-lookahead:v 60 -spatial_aq:v 1 -c:a copy -c:s copy -max_muxing_queue_size 4096 ${extraArguments}`;
+    response.preset = `,-map 0 -c:v hevc_nvenc -rc:v vbr_hq -qmin 5 -cq:v 19 ${bitrateSettings} -preset 7 -rc-lookahead:v 60 -spatial_aq:v 1 -c:a copy -c:s copy -max_muxing_queue_size 9999 ${extraArguments}`;
     response.infoLog += "☒File is not in wanted format, Transcoding. \n";
   } else {
     response.processFile = false;

@@ -98,7 +98,7 @@ function plugin(file, librarySettings, inputs) {
   if (convert === true) {
     response.processFile = true;
     response.reQueueAfter = true;
-    response.preset = `,-map 0 -c copy ${extraArguments} -max_muxing_queue_size 4096`;
+    response.preset = `,-map 0 -c copy ${extraArguments} -max_muxing_queue_size 9999`;
     response.infoLog += "☒File doesn't contain the right audio streams, Adding and Converting. \n";
   } else {
     response.processFile = false;

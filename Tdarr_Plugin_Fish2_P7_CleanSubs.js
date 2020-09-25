@@ -193,7 +193,7 @@ function plugin(file, librarySettings, inputs) {
   if (convert === true) {
     response.processFile = true;
     response.reQueueAfter = true;
-    response.preset = `,-map 0 ${extraArguments} -c copy -max_muxing_queue_size 4096`;
+    response.preset = `,-map 0 ${extraArguments} -c copy -max_muxing_queue_size 9999`;
     response.infoLog += "☒File has bad subs, removing and tagging. \n";
   } else {
     response.processFile = false;
